@@ -1,0 +1,45 @@
+Ejercicio sugerido
+
+Usá una base con tablas `clientes`, `compras`, `productos`. Escribí una query que:
+
+1. Traiga el total gastado por cada cliente en los últimos 60 días.
+2. Incluya la fecha de su última compra.
+3. Le asigne un ranking de “cliente top” por monto total.
+4. Use al menos 2 CTEs y 2 window functions.
+
+WITH ventas_ultimos_60_dias AS (
+    SELECT *
+    FROM compras
+    WHERE fecha_compra >= CURRENT_DATE - INTERVAL 60 DAY
+),
+total_por_cliente AS (
+    SELECT cliente_id, SUM(monto_total) AS total
+    FROM ventas_ultimos_60_dias
+    GROUP BY cliente_id
+),
+ultima_compra_por_cliente AS(
+    SELECT 
+    cliente_id, 
+    compra_id, 
+    fecha_compra, 
+    monto_total,
+    row_number() OVER (
+        PARTITION BY cliente_id
+        ORDER BY fecha_compra desc
+    ) as rn
+    FROM ventas_ultimos_60_dias
+)
+SELECT 
+row_number() OVER(
+    ORDER BY t.total DESC
+) as ranking_position,
+t.cliente_id,
+t.total,
+u.compra_id,
+u.fecha_compra,
+u.monto_total as monto_ult_compra
+FROM total_por_cliente t
+JOIN ultima_compra_por_cliente u
+    ON t.cliente_id = u.cliente_id
+WHERE rn = 1
+ORDER BY total DESC;
