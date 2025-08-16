@@ -1,0 +1,63 @@
+## Ejercicio sugerido
+
+Diseñá los siguientes modelos:
+
+1. `stg_ventas`: limpieza y tipificación de la tabla cruda
+2. `int_ingresos_mensuales`: total por mes por cliente
+3. `mart_top_clientes`: top 10 clientes por facturación en los últimos 90 días
+
+Aplicá al menos una migración sobre `int_ingresos_mensuales`:
+
+agregá una columna nueva y reversioná como `v2`.
+
+1.
+CREATE OR REPLACE VIEW stg_clientes AS
+SELECT
+    cliente_id,
+    UNACCENT(INITCAP(nombre)) AS nombre,
+    UNACCENT(INITCAP(apellido)) AS apellido,
+    fecha_registro :: date,
+    fecha_nacimiento :: date
+FROM clientes
+
+2.
+CREATE OR REPLACE VIEW int_ingresos_mensuales AS
+SELECT  
+    cl.cliente_id,
+    cl.nombre,
+    cl.apellido,
+    DATE_FORMAT(co.fecha_compra, '%Y-%m') AS mes,
+    SUM(co.monto_total) AS total_mensual
+FROM clientes cl
+JOIN compras co ON cl.cliente_id = co.cliente_id
+GROUP BY 1,2,3,4
+ORDER BY 1,2
+
+CREATE OR REPLACE VIEW int_ingresos_mensuales_v2 AS
+SELECT  
+    cl.cliente_id,
+    cl.nombre,
+    cl.apellido,
+    DATE_FORMAT(co.fecha_compra, '%Y-%m') AS mes,
+    SUM(co.monto_total) AS total_mensual,
+    AVG(co.monto_total) AS promedio_compra
+FROM clientes cl
+JOIN compras co ON cl.cliente_id = co.cliente_id
+GROUP BY 1,2,3,4
+ORDER BY 1,2
+
+3.
+CREATE OR REPLACE VIEW mart_top_clientes AS
+SELECT  
+    cl.cliente_id,
+    cl.nombre,
+    cl.apellido,
+    SUM(co.monto_total) AS total_mensual
+FROM clientes cl
+JOIN compras co ON cl.cliente_id = co.cliente_id
+WHERE co.fecha_compra >= CURRENT_DATE - INTERVAL '90 days'
+GROUP BY 1,2,3
+ORDER BY 4 desc
+LIMIT 10
+
+

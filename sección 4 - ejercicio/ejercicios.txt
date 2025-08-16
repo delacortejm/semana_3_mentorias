@@ -1,0 +1,21 @@
+Diseñá una tabla llamada `ventas_diarias` y:
+
+1. Implementá un pipeline full refresh (TRUNCATE + INSERT)
+2. Luego, reemplazalo por una lógica incremental usando `fecha`
+3. Simulá datos nuevos agregando una fila con `fecha = hoy`
+4. Validá que solo esa fila se agregue
+
+tabla de ventas_diarias:
+    WITH ventas_por_dia AS (
+        SELECT 
+            DATE(fecha_compra) AS fecha,
+            COUNT(*) AS cantidad_ventas,
+            SUM(monto_total) AS total_ventas,
+            AVG(monto_total) AS promedio_venta
+        FROM compras 
+        WHERE estado_compra = 'completada'
+        GROUP BY DATE(fecha_compra)
+    )
+    CREATE TABLE ventas_diarias AS
+    SELECT * FROM ventas_por_dia
+    ORDER BY fecha;
